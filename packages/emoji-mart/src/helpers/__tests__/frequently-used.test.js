@@ -145,7 +145,7 @@ describe('FrequentlyUsed', () => {
       FrequentlyUsed.add({ id: 'heart' })
 
       const frequentlyCall = Store.set.mock.calls.find(
-        (c) => c[0] === 'frequently'
+        (c) => c[0] === 'frequently',
       )
       expect(frequentlyCall).toBeDefined()
       expect(frequentlyCall[1]).toHaveProperty('heart')

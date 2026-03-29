@@ -103,9 +103,9 @@ describe('NativeSupport (mocked canvas)', () => {
         // Put a visible pixel at position (2, 0) — index 8
         // Same RGB in both left and right draws (emoji has inherent color)
         const idx = 8
-        data[idx] = 200     // R
+        data[idx] = 200 // R
         data[idx + 1] = 150 // G
-        data[idx + 2] = 50  // B
+        data[idx + 2] = 50 // B
         data[idx + 3] = 255 // A (visible)
       }
       // If not supported: all alpha=0, so "no visible pixel" path triggers
@@ -127,10 +127,10 @@ describe('NativeSupport (mocked canvas)', () => {
         // 1x1 pixel read (right side comparison)
         const data = new Uint8ClampedArray(4)
         if (supported) {
-          data[0] = 200     // R — matches left side
-          data[1] = 150     // G
-          data[2] = 50      // B
-          data[3] = 255     // A
+          data[0] = 200 // R — matches left side
+          data[1] = 150 // G
+          data[2] = 50 // B
+          data[3] = 255 // A
         }
         return { data }
       }),

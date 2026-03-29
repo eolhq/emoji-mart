@@ -212,9 +212,7 @@ describe('init()', () => {
   test('excludes emojis via exceptEmojis', async () => {
     const data = createTestData()
     await config.init({ data, exceptEmojis: ['grinning'] })
-    const peopleCategory = config.Data.categories.find(
-      (c) => c.id === 'people',
-    )
+    const peopleCategory = config.Data.categories.find((c) => c.id === 'people')
     expect(peopleCategory.emojis).not.toContain('grinning')
     expect(peopleCategory.emojis).toContain('smiley')
   })
@@ -227,23 +225,27 @@ describe('init()', () => {
     // After the emoji-level splice removes 'dog', the nature category has emojis:[].
     // The splice check runs at the start of each category's iteration, so nature won't
     // be removed in this pass — it remains with an empty emojis array.
-    const natureCategory = config.Data.categories.find(
-      (c) => c.id === 'nature',
-    )
+    const natureCategory = config.Data.categories.find((c) => c.id === 'nature')
     expect(natureCategory).toBeDefined()
     expect(natureCategory.emojis).toHaveLength(0)
   })
 
   test('uses custom i18n when provided', async () => {
     const data = createTestData()
-    const customI18n = { search: 'Suche', categories: { custom: 'Benutzerdefiniert' } }
+    const customI18n = {
+      search: 'Suche',
+      categories: { custom: 'Benutzerdefiniert' },
+    }
     await config.init({ data, i18n: customI18n })
     expect(config.I18n.search).toBe('Suche')
   })
 
   test('accepts i18n as async function', async () => {
     const data = createTestData()
-    const customI18n = { search: 'Chercher', categories: { custom: 'Personnalisé' } }
+    const customI18n = {
+      search: 'Chercher',
+      categories: { custom: 'Personnalisé' },
+    }
     const i18nFn = jest.fn().mockResolvedValue(customI18n)
     await config.init({ data, i18n: i18nFn })
     expect(i18nFn).toHaveBeenCalledTimes(1)
@@ -285,8 +287,12 @@ describe('init()', () => {
 
   test('fetchJSON: caches results so fetch is only called once per URL', async () => {
     const data = createTestData()
-    const i18nDe = { search: 'Suchen', categories: { custom: 'Benutzerdefiniert' } }
-    const mockFetch = jest.fn()
+    const i18nDe = {
+      search: 'Suchen',
+      categories: { custom: 'Benutzerdefiniert' },
+    }
+    const mockFetch = jest
+      .fn()
       .mockResolvedValueOnce({ json: () => Promise.resolve(data) })
       .mockResolvedValueOnce({ json: () => Promise.resolve(i18nDe) })
     global.fetch = mockFetch
@@ -348,9 +354,13 @@ describe('init()', () => {
 
   test('fetchJSON: fetches i18n from CDN when locale is non-English and no i18n provided', async () => {
     const data = createTestData()
-    const i18nData = { search: 'Suchen', categories: { custom: 'Benutzerdefiniert' } }
-    const mockFetch = jest.fn()
-      .mockResolvedValueOnce({ json: () => Promise.resolve(data) })   // data fetch
+    const i18nData = {
+      search: 'Suchen',
+      categories: { custom: 'Benutzerdefiniert' },
+    }
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(data) }) // data fetch
       .mockResolvedValueOnce({ json: () => Promise.resolve(i18nData) }) // i18n fetch
     global.fetch = mockFetch
 
@@ -407,7 +417,12 @@ describe('init()', () => {
       skins: [{ src: 'https://example.com/y.gif' }],
     }
     const cat1 = { id: 'catX', name: 'Cat X', emojis: [emoji1] }
-    const cat2 = { id: 'catY', name: 'Cat Y', emojis: [emoji2], icon: 'some-icon' }
+    const cat2 = {
+      id: 'catY',
+      name: 'Cat Y',
+      emojis: [emoji2],
+      icon: 'some-icon',
+    }
 
     await config.init({ data, custom: [cat1, cat2] })
 
@@ -459,9 +474,7 @@ describe('init()', () => {
     NativeSupport.noCountryFlags.mockReturnValue(true)
 
     const data = {
-      categories: [
-        { id: 'flags', emojis: ['checkered_flag', 'flag_us'] },
-      ],
+      categories: [{ id: 'flags', emojis: ['checkered_flag', 'flag_us'] }],
       emojis: {
         checkered_flag: {
           id: 'checkered_flag',
@@ -498,9 +511,7 @@ describe('init()', () => {
     NativeSupport.noCountryFlags.mockReturnValue(false)
 
     const data = {
-      categories: [
-        { id: 'people', emojis: ['emoji_v1', 'emoji_v2'] },
-      ],
+      categories: [{ id: 'people', emojis: ['emoji_v1', 'emoji_v2'] }],
       emojis: {
         emoji_v1: {
           id: 'emoji_v1',
@@ -534,9 +545,7 @@ describe('init()', () => {
     NativeSupport.noCountryFlags.mockReturnValue(true)
 
     const data = {
-      categories: [
-        { id: 'flags', emojis: ['checkered_flag', 'flag_de'] },
-      ],
+      categories: [{ id: 'flags', emojis: ['checkered_flag', 'flag_de'] }],
       emojis: {
         checkered_flag: {
           id: 'checkered_flag',
@@ -583,7 +592,11 @@ describe('getProps()', () => {
   })
 
   test('overrides defaults with provided props', () => {
-    const result = config.getProps({ theme: 'dark', size: 32 }, defaultProps, null)
+    const result = config.getProps(
+      { theme: 'dark', size: 32 },
+      defaultProps,
+      null,
+    )
     expect(result.theme).toBe('dark')
     expect(result.size).toBe(32)
     expect(result.open).toBe(true)
@@ -595,7 +608,9 @@ describe('getProps()', () => {
   })
 
   test('reads props from element attributes', () => {
-    const element = { getAttribute: (name) => (name === 'theme' ? 'contrast' : null) }
+    const element = {
+      getAttribute: (name) => (name === 'theme' ? 'contrast' : null),
+    }
     const result = config.getProps({}, defaultProps, element)
     expect(result.theme).toBe('contrast')
   })
@@ -665,7 +680,9 @@ describe('getProp()', () => {
 
   test('reads value from element attribute', () => {
     const defaults = { theme: { value: 'light' } }
-    const element = { getAttribute: (name) => (name === 'theme' ? 'dark' : null) }
+    const element = {
+      getAttribute: (name) => (name === 'theme' ? 'dark' : null),
+    }
     const result = config.getProp('theme', {}, defaults, element)
     expect(result).toBe('dark')
   })
@@ -677,7 +694,9 @@ describe('getProp()', () => {
 
   test('element attribute takes precedence over props', () => {
     const defaults = { theme: { value: 'light' } }
-    const element = { getAttribute: (name) => (name === 'theme' ? 'contrast' : null) }
+    const element = {
+      getAttribute: (name) => (name === 'theme' ? 'contrast' : null),
+    }
     const result = config.getProp('theme', { theme: 'dark' }, defaults, element)
     expect(result).toBe('contrast')
   })

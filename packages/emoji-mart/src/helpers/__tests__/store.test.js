@@ -8,7 +8,9 @@ describe('Store', () => {
   describe('set', () => {
     test('stores value with emoji-mart. prefix', () => {
       Store.set('theme', 'dark')
-      expect(window.localStorage['emoji-mart.theme']).toBe(JSON.stringify('dark'))
+      expect(window.localStorage['emoji-mart.theme']).toBe(
+        JSON.stringify('dark'),
+      )
     })
 
     test('JSON-serializes the value', () => {

@@ -58,7 +58,9 @@ describe('SearchIndex', () => {
     })
 
     test('matches :shortcode::skin-tone-2: format', () => {
-      expect(SearchIndex.SHORTCODES_REGEX.test(':wave::skin-tone-2:')).toBe(true)
+      expect(SearchIndex.SHORTCODES_REGEX.test(':wave::skin-tone-2:')).toBe(
+        true,
+      )
     })
 
     test('does not match plain text', () => {

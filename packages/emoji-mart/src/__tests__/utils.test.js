@@ -46,9 +46,7 @@ describe('getEmojiData', () => {
     name: 'Grinning Face',
     keywords: ['happy', 'smile'],
     shortcodes: ':grinning:',
-    skins: [
-      { native: '😀', unified: '1f600', shortcodes: ':grinning:' },
-    ],
+    skins: [{ native: '😀', unified: '1f600', shortcodes: ':grinning:' }],
     ...overrides,
   })
 
@@ -69,7 +67,11 @@ describe('getEmojiData', () => {
     const emoji = makeEmoji({
       skins: [
         { native: '😀', unified: '1f600', shortcodes: ':grinning:' },
-        { native: '😀🏽', unified: '1f600-1f3fd', shortcodes: ':grinning::skin-tone-4:' },
+        {
+          native: '😀🏽',
+          unified: '1f600-1f3fd',
+          shortcodes: ':grinning::skin-tone-4:',
+        },
       ],
     })
     const result = getEmojiData(emoji, { skinIndex: 1 })
@@ -89,7 +91,11 @@ describe('getEmojiData', () => {
     const emoji = makeEmoji({
       skins: [
         { native: '😀', unified: '1f600', shortcodes: ':grinning:' },
-        { native: '😀🏽', unified: '1f600-1f3fd', shortcodes: ':grinning::skin-tone-4:' },
+        {
+          native: '😀🏽',
+          unified: '1f600-1f3fd',
+          shortcodes: ':grinning::skin-tone-4:',
+        },
       ],
     })
     const result = getEmojiData(emoji, { skinIndex: 0 })
@@ -105,7 +111,12 @@ describe('getEmojiData', () => {
   test('includes src when skin has src', () => {
     const emoji = makeEmoji({
       skins: [
-        { native: '😀', unified: '1f600', shortcodes: ':grinning:', src: 'https://example.com/emoji.png' },
+        {
+          native: '😀',
+          unified: '1f600',
+          shortcodes: ':grinning:',
+          src: 'https://example.com/emoji.png',
+        },
       ],
     })
     const result = getEmojiData(emoji)
@@ -209,8 +220,16 @@ describe('getEmojiDataFromNative', () => {
       shortcodes: ':wave:',
       skins: [
         { native: '👋', unified: '1f44b', shortcodes: ':wave:' },
-        { native: '👋🏻', unified: '1f44b-1f3fb', shortcodes: ':wave::skin-tone-2:' },
-        { native: '👋🏽', unified: '1f44b-1f3fd', shortcodes: ':wave::skin-tone-4:' },
+        {
+          native: '👋🏻',
+          unified: '1f44b-1f3fb',
+          shortcodes: ':wave::skin-tone-2:',
+        },
+        {
+          native: '👋🏽',
+          unified: '1f44b-1f3fd',
+          shortcodes: ':wave::skin-tone-4:',
+        },
       ],
     }
     SearchIndex.search.mockResolvedValue([mockEmoji])
