@@ -7,7 +7,7 @@ import EmojiPicker from '../react'
 
 // Mock the Picker class from emoji-mart since it requires
 // browser APIs (Shadow DOM, custom elements) not available in jsdom
-jest.mock('emoji-mart', () => ({
+jest.mock('@eolhq/emoji-mart', () => ({
   Picker: jest.fn().mockImplementation(function (props) {
     this.props = props
     this.update = jest.fn()
@@ -30,7 +30,7 @@ describe('EmojiPicker React 19 compatibility', () => {
   })
 
   test('passes props to Picker instance', () => {
-    const { Picker } = require('emoji-mart')
+    const { Picker } = require('@eolhq/emoji-mart')
     const onEmojiSelect = jest.fn()
 
     render(<EmojiPicker theme="dark" onEmojiSelect={onEmojiSelect} />)
@@ -44,7 +44,7 @@ describe('EmojiPicker React 19 compatibility', () => {
   })
 
   test('calls update on re-render with new props', () => {
-    const { Picker } = require('emoji-mart')
+    const { Picker } = require('@eolhq/emoji-mart')
     const { rerender } = render(<EmojiPicker theme="light" />)
 
     const instance = Picker.mock.instances[0] || Picker.mock.results[0]?.value
