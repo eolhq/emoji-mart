@@ -263,6 +263,307 @@ describe('init()', () => {
     )
     expect(customCategory).toBeUndefined()
   })
+
+  // ── fetchJSON (lines 15-25) ────────────────────────────────────────────────
+
+  test('fetchJSON: fetches data from CDN when no data option provided', async () => {
+    const data = createTestData()
+    const mockFetch = jest.fn().mockResolvedValue({
+      json: () => Promise.resolve(data),
+    })
+    global.fetch = mockFetch
+
+    await config.init({})
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    const calledUrl = mockFetch.mock.calls[0][0]
+    expect(calledUrl).toMatch(/cdn\.jsdelivr\.net/)
+    expect(calledUrl).toMatch(/emoji-mart\/data/)
+
+    delete global.fetch
+  })
+
+  test('fetchJSON: caches results so fetch is only called once per URL', async () => {
+    const data = createTestData()
+    const i18nDe = { search: 'Suchen', categories: { custom: 'Benutzerdefiniert' } }
+    const mockFetch = jest.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(data) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve(i18nDe) })
+    global.fetch = mockFetch
+
+    // First init — fetches both data and i18n for locale 'de'
+    await config.init({ locale: 'de' })
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+
+    // Second init triggers re-init path (Data already exists) but i18n CDN URL
+    // is the same — fetchCache should serve it without another fetch call
+    await config.init({ locale: 'de' })
+    expect(mockFetch).toHaveBeenCalledTimes(2) // still 2, cache was hit for i18n
+
+    delete global.fetch
+  })
+
+  // ── caller warning (lines 41-44) ──────────────────────────────────────────
+
+  test('logs console.warn when caller is provided but data is not initialized', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    // Call init without options but with a caller — Data is not yet initialized
+    config.init(null, { caller: 'MyComponent' })
+
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy.mock.calls[0][0]).toContain('MyComponent')
+
+    warnSpy.mockRestore()
+  })
+
+  // ── re-init with existing Data — filter custom categories (lines 83-89) ───
+
+  test('second init call strips previously added custom categories from Data', async () => {
+    const data = createTestData()
+    const customEmoji = {
+      id: 'blob_party',
+      name: 'Blob Party',
+      keywords: ['party'],
+      skins: [{ src: 'https://example.com/blob.gif' }],
+    }
+
+    // First init: add a custom category
+    await config.init({
+      data,
+      custom: [{ id: 'custom_blobs', name: 'Blobs', emojis: [customEmoji] }],
+    })
+    expect(
+      config.Data.categories.find((c) => c.id === 'custom_blobs'),
+    ).toBeDefined()
+
+    // Second init (Data already set): custom categories should be filtered out
+    await config.init({ data })
+    expect(
+      config.Data.categories.find((c) => c.id === 'custom_blobs'),
+    ).toBeUndefined()
+  })
+
+  // ── i18n as function / non-English locale via fetchJSON (lines 91-97) ─────
+
+  test('fetchJSON: fetches i18n from CDN when locale is non-English and no i18n provided', async () => {
+    const data = createTestData()
+    const i18nData = { search: 'Suchen', categories: { custom: 'Benutzerdefiniert' } }
+    const mockFetch = jest.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(data) })   // data fetch
+      .mockResolvedValueOnce({ json: () => Promise.resolve(i18nData) }) // i18n fetch
+    global.fetch = mockFetch
+
+    await config.init({ locale: 'de' })
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    const i18nUrl = mockFetch.mock.calls[1][0]
+    expect(i18nUrl).toMatch(/i18n\/de\.json/)
+    expect(config.I18n.search).toBe('Suchen')
+
+    delete global.fetch
+  })
+
+  // ── custom category target (lines 111-112) ────────────────────────────────
+
+  test('second custom category without icon gets target pointing to first custom category', async () => {
+    const data = createTestData()
+    const emoji1 = {
+      id: 'custom_a',
+      name: 'Custom A',
+      keywords: [],
+      skins: [{ src: 'https://example.com/a.gif' }],
+    }
+    const emoji2 = {
+      id: 'custom_b',
+      name: 'Custom B',
+      keywords: [],
+      skins: [{ src: 'https://example.com/b.gif' }],
+    }
+    const cat1 = { id: 'cat1', name: 'Cat 1', emojis: [emoji1] }
+    const cat2 = { id: 'cat2', name: 'Cat 2', emojis: [emoji2] } // no icon
+
+    await config.init({ data, custom: [cat1, cat2] })
+
+    const storedCat2 = config.Data.categories.find((c) => c.id === 'cat2')
+    expect(storedCat2).toBeDefined()
+    // target should be set to cat1 (or cat1.target if cat1 already had a target)
+    expect(storedCat2.target).toBeDefined()
+    expect(storedCat2.target.id).toBe('cat1')
+  })
+
+  test('second custom category with icon does not get target set', async () => {
+    const data = createTestData()
+    const emoji1 = {
+      id: 'custom_x',
+      name: 'Custom X',
+      keywords: [],
+      skins: [{ src: 'https://example.com/x.gif' }],
+    }
+    const emoji2 = {
+      id: 'custom_y',
+      name: 'Custom Y',
+      keywords: [],
+      skins: [{ src: 'https://example.com/y.gif' }],
+    }
+    const cat1 = { id: 'catX', name: 'Cat X', emojis: [emoji1] }
+    const cat2 = { id: 'catY', name: 'Cat Y', emojis: [emoji2], icon: 'some-icon' }
+
+    await config.init({ data, custom: [cat1, cat2] })
+
+    const storedCat2 = config.Data.categories.find((c) => c.id === 'catY')
+    expect(storedCat2).toBeDefined()
+    expect(storedCat2.target).toBeUndefined()
+  })
+
+  // ── categoryIcons (lines 166-170) ─────────────────────────────────────────
+
+  test('categoryIcons option sets icons on matching categories', async () => {
+    const data = createTestData()
+    const categoryIcons = {
+      people: { svg: '<svg>people</svg>' },
+      nature: { svg: '<svg>nature</svg>' },
+    }
+
+    await config.init({ data, categoryIcons })
+
+    const peopleCategory = config.Data.categories.find((c) => c.id === 'people')
+    expect(peopleCategory).toBeDefined()
+    expect(peopleCategory.icon).toEqual({ svg: '<svg>people</svg>' })
+
+    const natureCategory = config.Data.categories.find((c) => c.id === 'nature')
+    expect(natureCategory).toBeDefined()
+    expect(natureCategory.icon).toEqual({ svg: '<svg>nature</svg>' })
+  })
+
+  test('categoryIcons does not overwrite icon when category already has one', async () => {
+    const data = createTestData()
+    // Give the people category an existing icon
+    data.categories[0].icon = 'existing-icon'
+
+    const categoryIcons = {
+      people: { svg: '<svg>new-icon</svg>' },
+    }
+
+    await config.init({ data, categoryIcons })
+
+    const peopleCategory = config.Data.categories.find((c) => c.id === 'people')
+    expect(peopleCategory.icon).toBe('existing-icon')
+  })
+
+  // ── noCountryFlags + SafeFlags (lines 190-199) ────────────────────────────
+
+  test('noCountryFlags filters non-safe flag emojis from flags category', async () => {
+    const { NativeSupport } = require('../helpers')
+    NativeSupport.latestVersion.mockReturnValue(14)
+    NativeSupport.noCountryFlags.mockReturnValue(true)
+
+    const data = {
+      categories: [
+        { id: 'flags', emojis: ['checkered_flag', 'flag_us'] },
+      ],
+      emojis: {
+        checkered_flag: {
+          id: 'checkered_flag',
+          name: 'Checkered Flag',
+          keywords: ['racing'],
+          skins: [{ unified: '1f3c1', native: '🏁' }],
+          version: 1,
+        },
+        flag_us: {
+          id: 'flag_us',
+          name: 'United States',
+          keywords: ['usa'],
+          skins: [{ unified: '1f1fa-1f1f8', native: '🇺🇸' }],
+          version: 1,
+        },
+      },
+      aliases: {},
+      sheet: { cols: 61, rows: 61 },
+    }
+
+    await config.init({ data, set: 'native', noCountryFlags: true })
+
+    const flagsCategory = config.Data.categories.find((c) => c.id === 'flags')
+    // checkered_flag is in SafeFlags mock, so it stays; flag_us is not safe, so removed
+    expect(flagsCategory.emojis).toContain('checkered_flag')
+    expect(flagsCategory.emojis).not.toContain('flag_us')
+  })
+
+  // ── latestVersionSupport — emoji version too new (lines 189-192) ───────────
+
+  test('filters out emojis whose version exceeds native support latestVersion', async () => {
+    const { NativeSupport } = require('../helpers')
+    NativeSupport.latestVersion.mockReturnValue(1)
+    NativeSupport.noCountryFlags.mockReturnValue(false)
+
+    const data = {
+      categories: [
+        { id: 'people', emojis: ['emoji_v1', 'emoji_v2'] },
+      ],
+      emojis: {
+        emoji_v1: {
+          id: 'emoji_v1',
+          name: 'Emoji Version 1',
+          keywords: ['old'],
+          skins: [{ unified: '1f600', native: '😀' }],
+          version: 1,
+        },
+        emoji_v2: {
+          id: 'emoji_v2',
+          name: 'Emoji Version 2',
+          keywords: ['new'],
+          skins: [{ unified: '1f972', native: '🥲' }],
+          version: 2,
+        },
+      },
+      aliases: {},
+      sheet: { cols: 61, rows: 61 },
+    }
+
+    await config.init({ data, set: 'native' })
+
+    const peopleCategory = config.Data.categories.find((c) => c.id === 'people')
+    expect(peopleCategory.emojis).toContain('emoji_v1')
+    expect(peopleCategory.emojis).not.toContain('emoji_v2')
+  })
+
+  test('noCountryFlags from NativeSupport.noCountryFlags() also filters flags', async () => {
+    const { NativeSupport } = require('../helpers')
+    NativeSupport.latestVersion.mockReturnValue(14)
+    NativeSupport.noCountryFlags.mockReturnValue(true)
+
+    const data = {
+      categories: [
+        { id: 'flags', emojis: ['checkered_flag', 'flag_de'] },
+      ],
+      emojis: {
+        checkered_flag: {
+          id: 'checkered_flag',
+          name: 'Checkered Flag',
+          keywords: ['racing'],
+          skins: [{ unified: '1f3c1', native: '🏁' }],
+          version: 1,
+        },
+        flag_de: {
+          id: 'flag_de',
+          name: 'Germany',
+          keywords: ['german'],
+          skins: [{ unified: '1f1e9-1f1ea', native: '🇩🇪' }],
+          version: 1,
+        },
+      },
+      aliases: {},
+      sheet: { cols: 61, rows: 61 },
+    }
+
+    // noCountryFlags from NativeSupport (not from props)
+    await config.init({ data, set: 'native' })
+
+    const flagsCategory = config.Data.categories.find((c) => c.id === 'flags')
+    expect(flagsCategory.emojis).toContain('checkered_flag')
+    expect(flagsCategory.emojis).not.toContain('flag_de')
+  })
 })
 
 // ─── getProps() ───────────────────────────────────────────────────────────────
