@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   integrity:
-    runs-on: ubuntu-latest
+    runs-on: np-amd64
     steps:
       - uses: actions/checkout@v3
 
@@ -30,7 +30,7 @@ jobs:
       - run: yarn check:types
 
   tests:
-    runs-on: ubuntu-latest
+    runs-on: np-amd64
     steps:
       - uses: actions/checkout@v3
 
